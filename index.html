@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#ffffff">
+<title>Peekgram</title>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{--bg:#f7f6fa;--panel:#fff;--border:#ececf2;--text:#1a1a1f;--sub:#6b6b78;--muted:#b0b0bc;--accent:#d6266e;--accent-bg:#fdeef5;--ig-grad:linear-gradient(135deg,#f9ce34,#ee2a7b,#6228d7);--tab-h:56px;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Hiragino Sans','Yu Gothic UI',sans-serif;background:var(--bg);color:var(--text);height:100dvh;display:flex;flex-direction:column;overflow:hidden;}
+/* topbar */
+#tb{height:52px;background:var(--panel);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 16px;flex-shrink:0;gap:10px;}
+.tb-logo{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:600;color:var(--text);text-decoration:none;}
+.tb-logo-box{width:30px;height:30px;border-radius:7px;background:var(--ig-grad);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.tb-tag{margin-left:auto;font-size:12px;color:var(--sub);}
+/* layout */
+#ly{display:flex;flex:1;overflow:hidden;}
+#lp{width:300px;min-width:300px;background:var(--panel);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow-y:auto;scrollbar-width:thin;scrollbar-color:#ddd transparent;}
+#rp{flex:1;display:flex;flex-direction:column;align-items:center;background:var(--bg);overflow-y:auto;padding:28px 20px 40px;}
+#mob-tab{display:none;}
+.ls{padding:16px;border-bottom:1px solid var(--border);}
+.ls-t{font-size:11px;font-weight:600;color:var(--sub);margin-bottom:12px;letter-spacing:.03em;display:flex;align-items:center;gap:6px;}
+.ls-t::before{content:'';width:3px;height:12px;border-radius:2px;background:var(--ig-grad);}
+/* dropzone */
+#dz{border:1.5px dashed #d0d0d0;border-radius:10px;padding:24px 16px;text-align:center;cursor:pointer;transition:all .2s;background:#fafafa;}
+#dz:hover,#dz.ov{border-color:var(--accent);background:var(--accent-bg);}
+.dz-ic{width:42px;height:42px;border-radius:50%;background:var(--ig-grad);display:flex;align-items:center;justify-content:center;margin:0 auto 10px;}
+.dz-ic svg{width:20px;height:20px;stroke:#fff;fill:none;stroke-width:1.8;}
+.dz-m{font-size:13px;color:var(--sub);margin-bottom:3px;}
+.dz-s{font-size:11px;color:var(--muted);}
+/* ig import */
+.ig-card{border:1px solid var(--border);border-radius:10px;padding:14px;background:#fafafa;}
+.ig-card-top{display:flex;align-items:flex-start;gap:10px;margin-bottom:12px;}
+.ig-ic{width:34px;height:34px;flex-shrink:0;border-radius:8px;background:var(--ig-grad);display:flex;align-items:center;justify-content:center;}
+.ig-ic svg{width:18px;height:18px;fill:#fff;}
+.ig-card-title{font-size:12px;font-weight:500;color:var(--text);margin-bottom:2px;}
+.ig-card-desc{font-size:11px;color:var(--sub);line-height:1.5;}
+.ig-btns{display:flex;gap:6px;}
+.ig-btn{flex:1;border:1px solid var(--border);border-radius:7px;padding:8px 6px;font-size:11px;font-family:inherit;color:var(--sub);background:var(--panel);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;transition:all .15s;}
+.ig-btn:hover{border-color:#bbb;color:var(--text);}
+.ig-btn svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:1.8;}
+/* list */
+#il{display:flex;flex-direction:column;gap:3px;}
+.il-r{display:flex;align-items:center;gap:8px;padding:5px 6px;border-radius:7px;cursor:grab;border:1px solid transparent;transition:background .1s;user-select:none;background:#fff;}
+.il-r:hover{background:#f5f5f5;}
+.il-r.sortable-ghost{opacity:.35;background:var(--accent-bg);}
+.il-r.sortable-chosen{background:#f0f0f5;}
+.il-g svg{width:13px;height:13px;fill:#ccc;}
+.il-th{width:38px;height:38px;border-radius:6px;object-fit:cover;flex-shrink:0;pointer-events:none;}
+.il-n{font-size:11px;color:var(--sub);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;pointer-events:none;}
+.il-i{font-size:10px;color:var(--muted);min-width:16px;text-align:right;pointer-events:none;}
+.il-d{background:none;border:none;cursor:pointer;color:#ccc;padding:2px;display:flex;align-items:center;border-radius:4px;}
+.il-d:hover{color:#e74c3c;}
+.il-d svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;}
+.cl-btn{width:100%;background:none;border:1px solid #fce4e4;border-radius:8px;padding:8px;font-size:11px;font-family:inherit;color:#e74c3c;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:5px;transition:all .15s;margin-top:8px;}
+.cl-btn:hover{background:#fff5f5;}
+.cl-btn svg{width:13px;height:13px;stroke:currentColor;fill:none;stroke-width:2;}
+/* preview */
+.pv-lbl{font-size:13px;font-weight:600;margin-bottom:18px;align-self:flex-start;padding-left:4px;background:var(--ig-grad);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+/* phone */
+#ph-w{width:330px;flex-shrink:0;}
+#ph{background:#fff;border-radius:46px;border:9px solid #1c1c1e;overflow:hidden;box-shadow:0 0 0 1.5px #3a3a3c,0 30px 70px rgba(0,0,0,.22);position:relative;height:780px;display:flex;flex-direction:column;}
+#di{position:absolute;top:10px;left:50%;transform:translateX(-50%);width:100px;height:30px;background:#1c1c1e;border-radius:20px;z-index:20;}
+#sb{height:50px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 22px 8px;background:#fff;position:relative;z-index:5;flex-shrink:0;}
+.sb-t{font-size:13px;font-weight:600;color:#111;letter-spacing:-.02em;}
+.sb-ic{display:flex;align-items:center;gap:5px;}
+#ig-hd{display:flex;align-items:center;padding:0 14px 10px;background:#fff;flex-shrink:0;}
+.ig-un{font-size:15px;font-weight:700;color:#111;flex:1;letter-spacing:-.02em;}
+.ig-hi{display:flex;gap:16px;align-items:center;}
+.ig-hi svg{width:22px;height:22px;stroke:#111;fill:none;stroke-width:1.8;}
+#ph-scroll{flex:1;overflow-y:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch;}
+#ph-scroll::-webkit-scrollbar{width:0;}
+#p-tab{display:flex;border-top:.5px solid #dbdbdb;border-bottom:.5px solid #dbdbdb;background:#fff;position:sticky;top:0;z-index:3;}
+.tbt{flex:1;padding:10px 0;display:flex;align-items:center;justify-content:center;cursor:pointer;border-bottom:1.5px solid transparent;}
+.tbt.on{border-bottom-color:#111;}
+.tbt svg{width:22px;height:22px;stroke:#aaa;fill:none;stroke-width:1.6;}
+.tbt.on svg{stroke:#111;}
+/* grid */
+#gd{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;background:#dbdbdb;}
+.gc{aspect-ratio:4/5;background:#f5f5f5;position:relative;overflow:hidden;cursor:grab;}
+.gc img{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;}
+.gc.sortable-ghost{opacity:.3;}
+.gc.sortable-ghost img{opacity:.3;}
+.gc.sortable-chosen{cursor:grabbing;}
+.gc.sortable-drag{opacity:1;box-shadow:0 8px 24px rgba(0,0,0,.3);}
+.gc .gn{position:absolute;top:3px;left:3px;background:rgba(0,0,0,.45);color:#fff;font-size:8px;width:15px;height:15px;border-radius:50%;display:flex;align-items:center;justify-content:center;pointer-events:none;font-weight:500;z-index:2;}
+.gc .gr{position:absolute;top:3px;right:3px;width:16px;height:16px;border-radius:50%;background:rgba(0,0,0,.5);color:#fff;border:none;font-size:10px;display:none;align-items:center;justify-content:center;cursor:pointer;padding:0;z-index:2;}
+.gc:hover .gr{display:flex;}
+.gc-e{display:flex;align-items:center;justify-content:center;background:#f5f5f5;cursor:pointer;}
+.gc-e svg{width:22px;height:22px;stroke:#ccc;fill:none;stroke-width:1.5;}
+/* toast */
+#toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(16px);background:#1c1c1e;color:#fff;padding:10px 20px;border-radius:10px;font-size:12px;opacity:0;transition:all .25s;pointer-events:none;z-index:9998;white-space:nowrap;}
+#toast.on{opacity:1;transform:translateX(-50%) translateY(0);}
+#fi,#zi{display:none;}
+/* guide modal */
+#guide-ov{position:fixed;inset:0;background:rgba(20,20,28,.55);backdrop-filter:blur(3px);display:none;align-items:center;justify-content:center;z-index:10000;padding:20px;opacity:0;transition:opacity .2s;}
+#guide-ov.on{display:flex;opacity:1;}
+#guide{background:var(--panel);border-radius:18px;max-width:420px;width:100%;max-height:85vh;overflow-y:auto;box-shadow:0 24px 60px rgba(0,0,0,.3);}
+.gd-head{position:sticky;top:0;background:var(--ig-grad);padding:18px 20px;display:flex;align-items:center;gap:10px;}
+.gd-head svg{width:22px;height:22px;fill:none;stroke:#fff;stroke-width:1.8;flex-shrink:0;}
+.gd-title{font-size:15px;font-weight:600;color:#fff;flex:1;}
+.gd-x{background:rgba(255,255,255,.2);border:none;width:28px;height:28px;border-radius:50%;color:#fff;font-size:15px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.gd-body{padding:18px 20px 8px;}
+.gd-step{display:flex;gap:13px;margin-bottom:16px;}
+.gd-num{width:26px;height:26px;border-radius:50%;background:var(--accent-bg);color:var(--accent);font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.gd-txt{font-size:13px;line-height:1.6;color:var(--text);padding-top:2px;}
+.gd-txt b{font-weight:600;color:var(--accent);}
+.gd-note{display:flex;gap:9px;align-items:flex-start;background:#fff7e6;border:1px solid #ffe0a3;border-radius:10px;padding:11px 13px;margin:6px 20px 20px;}
+.gd-note svg{width:17px;height:17px;fill:none;stroke:#e6900a;stroke-width:2;flex-shrink:0;margin-top:1px;}
+.gd-note-txt{font-size:12px;line-height:1.55;color:#8a6200;}
+.gd-note-txt b{color:#c0392b;font-weight:700;}
+/* mobile */
+@media(max-width:640px){
+  body{overflow:hidden;}
+  .tb-tag{display:none;}
+  #ly{flex-direction:column;overflow:hidden;}
+  #lp{width:100%;min-width:unset;border-right:none;flex:1;overflow-y:auto;display:none;}
+  #lp.mob-active{display:flex;}
+  #rp{flex:1;padding:0;display:none;overflow:hidden;flex-direction:column;}
+  #rp.mob-active{display:flex;}
+  #mob-tab{display:flex;height:var(--tab-h);background:var(--panel);border-top:1px solid var(--border);flex-shrink:0;padding-bottom:env(safe-area-inset-bottom);}
+  .mt{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;cursor:pointer;font-size:10px;color:var(--muted);border:none;background:none;font-family:inherit;}
+  .mt svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.6;}
+  .mt.on{color:var(--accent);}
+  .pv-lbl{display:none;}
+  #ph-w{width:100%;max-width:100%;height:100%;}
+  #ph{border-radius:0;border:none;box-shadow:none;height:100%;}
+  #di{display:none;}
+  #sb{height:36px;padding:0 16px 6px;}
+  .gc .gr{display:flex;}
+  #toast{bottom:calc(var(--tab-h) + 12px);}
+  .il-r{padding:8px 6px;}
+  .il-th{width:44px;height:44px;}
+}
+</style>
+</head>
+<body>
+
+<div id="tb">
+  <a href="#" class="tb-logo">
+    <div class="tb-logo-box">
+      <svg viewBox="0 0 36 36" fill="none" width="18" height="18">
+        <rect x="3" y="3" width="13" height="13" rx="2.5" fill="rgba(255,255,255,0.25)" stroke="#fff" stroke-width="1.8"/>
+        <rect x="20" y="3" width="13" height="13" rx="2.5" fill="rgba(255,255,255,0.25)" stroke="#fff" stroke-width="1.8"/>
+        <rect x="3" y="20" width="13" height="13" rx="2.5" fill="rgba(255,255,255,0.25)" stroke="#fff" stroke-width="1.8"/>
+        <rect x="20" y="20" width="13" height="13" rx="2.5" fill="rgba(255,255,255,0.55)" stroke="#fff" stroke-width="1.8"/>
+        <circle cx="26.5" cy="26.5" r="4.5" stroke="#fff" stroke-width="2"/>
+        <line x1="30" y1="30" x2="34" y2="34" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/>
+      </svg>
+    </div>
+    Peekgram
+  </a>
+  <span class="tb-tag">投稿前にフィードの見え方を確認</span>
+</div>
+
+<div id="ly">
+  <div id="lp">
+    <div class="ls">
+      <div class="ls-t">画像を追加</div>
+      <div id="dz">
+        <div class="dz-ic"><svg viewBox="0 0 24 24"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg></div>
+        <div class="dz-m">タップして画像を選択</div>
+        <div class="dz-s">JPG / PNG / WebP</div>
+      </div>
+      <input type="file" id="fi" multiple accept="image/*">
+    </div>
+    <div class="ls">
+      <div class="ig-card">
+        <div class="ig-card-top">
+          <div class="ig-ic"><svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5" stroke="#fff" stroke-width="2.5"/></svg></div>
+          <div><div class="ig-card-title">Instagramデータを取り込み</div><div class="ig-card-desc">既存投稿を一括取り込み（最大100件）</div></div>
+        </div>
+        <div class="ig-btns">
+          <button class="ig-btn" onclick="document.getElementById('zi').click()">
+            <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>ZIPを選択
+          </button>
+          <button class="ig-btn" onclick="openGuide()"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>手順</button>
+        </div>
+      </div>
+      <input type="file" id="zi" accept=".zip">
+    </div>
+    <div class="ls" id="ls-list" style="display:none">
+      <div class="ls-t" style="display:flex;justify-content:space-between"><span>画像リスト</span><span id="ic" style="font-weight:400;color:var(--muted);font-size:10px"></span></div>
+      <div id="il"></div>
+      <button class="cl-btn" onclick="clearAll()">
+        <svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/></svg>すべて削除
+      </button>
+    </div>
+  </div>
+
+  <div id="rp">
+    <div class="pv-lbl">フィードプレビュー</div>
+    <div id="ph-w"><div id="ph">
+      <div id="di"></div>
+      <div id="sb">
+        <span class="sb-t" id="clk">9:41</span>
+        <span class="sb-ic">
+          <svg width="15" height="12" viewBox="0 0 15 12"><rect x="0" y="7" width="2.5" height="5" rx=".4" fill="#111"/><rect x="3.2" y="5" width="2.5" height="7" rx=".4" fill="#111"/><rect x="6.4" y="3" width="2.5" height="9" rx=".4" fill="#111"/><rect x="9.6" y="1" width="2.5" height="11" rx=".4" fill="#111" opacity=".3"/></svg>
+          <svg width="16" height="12" viewBox="0 0 16 12" fill="none"><path d="M8 2.5C10.8 2.5 13.3 3.7 15 5.6L13.8 6.8C12.4 5.3 10.3 4.4 8 4.4S3.6 5.3 2.2 6.8L1 5.6C2.7 3.7 5.2 2.5 8 2.5Z" fill="#111"/><path d="M8 5.5C9.9 5.5 11.6 6.3 12.8 7.6L11.6 8.8C10.7 7.8 9.4 7.2 8 7.2S5.3 7.8 4.4 8.8L3.2 7.6C4.4 6.3 6.1 5.5 8 5.5Z" fill="#111"/><circle cx="8" cy="11" r="1.2" fill="#111"/></svg>
+          <svg width="24" height="12" viewBox="0 0 24 12"><rect x=".5" y=".5" width="20" height="11" rx="3" stroke="#111" stroke-opacity=".35" fill="none"/><rect x="1.5" y="1.5" width="16" height="9" rx="2" fill="#111"/><path d="M22 4v4a2 2 0 0 0 0-4z" fill="#111" opacity=".35"/></svg>
+        </span>
+      </div>
+      <div id="ig-hd">
+        <span class="ig-un" id="ig-un">your_account</span>
+        <div class="ig-hi">
+          <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+          <svg viewBox="0 0 24 24"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </div>
+      </div>
+      <div id="ph-scroll">
+        <div id="p-tab">
+          <div class="tbt on"><svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg></div>
+          <div class="tbt"><svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="2"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></svg></div>
+          <div class="tbt"><svg viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg></div>
+        </div>
+        <div id="gd"></div>
+      </div>
+    </div></div>
+  </div>
+</div>
+
+<div id="mob-tab">
+  <button class="mt on" id="mt-preview" onclick="mobTab('preview')">
+    <svg viewBox="0 0 24 24"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="9" y1="7" x2="15" y2="7"/><line x1="9" y1="11" x2="15" y2="11"/><line x1="9" y1="15" x2="12" y2="15"/></svg>
+    プレビュー
+  </button>
+  <button class="mt" id="mt-manage" onclick="mobTab('manage')">
+    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="3"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+    写真追加
+  </button>
+</div>
+<div id="toast"></div>
+
+<div id="guide-ov" onclick="if(event.target===this)closeGuide()">
+  <div id="guide">
+    <div class="gd-head">
+      <svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+      <span class="gd-title">Instagramデータのダウンロード手順</span>
+      <button class="gd-x" onclick="closeGuide()">✕</button>
+    </div>
+    <div class="gd-body">
+      <div class="gd-step"><div class="gd-num">1</div><div class="gd-txt">Instagramアプリ → メニュー → <b>アカウントセンター</b></div></div>
+      <div class="gd-step"><div class="gd-num">2</div><div class="gd-txt"><b>「個人情報・許可」</b> → <b>「個人情報のダウンロード」</b></div></div>
+      <div class="gd-step"><div class="gd-num">3</div><div class="gd-txt">アカウントを選択 → <b>「情報の一部をダウンロード」</b></div></div>
+      <div class="gd-step"><div class="gd-num">4</div><div class="gd-txt"><b>「投稿」</b>だけにチェック → 次へ</div></div>
+      <div class="gd-step"><div class="gd-num">5</div><div class="gd-txt">形式: <b>JSON</b>、メディア画質: <b>中</b> を選択</div></div>
+      <div class="gd-step"><div class="gd-num">6</div><div class="gd-txt">申請後、メールで届くZIP（数時間〜48時間）をここに選択</div></div>
+    </div>
+    <div class="gd-note">
+      <svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <div class="gd-note-txt"><b>JSON形式</b>でないと取り込めません。HTMLを選ばないように注意してください。</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const $=id=>document.getElementById(id);
+const isMob=()=>window.innerWidth<=640;
+const imgs=[];   // {url, name}
+
+// mobile tab
+function mobTab(t){
+  const isP=t==='preview';
+  $('lp').classList.toggle('mob-active',!isP);
+  $('rp').classList.toggle('mob-active',isP);
+  $('mt-preview').classList.toggle('on',isP);
+  $('mt-manage').classList.toggle('on',!isP);
+}
+function initMob(){
+  if(isMob()){$('rp').classList.add('mob-active');$('mt-preview').classList.add('on');}
+  else{$('lp').classList.remove('mob-active');$('rp').classList.remove('mob-active');}
+}
+initMob();
+window.addEventListener('resize',initMob);
+
+// clock
+(function(){const d=new Date(),h=d.getHours(),m=d.getMinutes();$('clk').textContent=h+':'+(m<10?'0':'')+m;})();
+
+// toast
+function toast(s){const e=$('toast');e.textContent=s;e.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('on'),2200);}
+
+// guide
+function openGuide(){$('guide-ov').classList.add('on');}
+function closeGuide(){$('guide-ov').classList.remove('on');}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeGuide();});
+
+// counts
+function updateCounts(){
+  $('ic').textContent=imgs.length+'枚';
+  $('ls-list').style.display=imgs.length?'block':'none';
+}
+
+// thumbnail (canvas縮小)
+function makeThumb(file,maxSize){
+  return new Promise(resolve=>{
+    const r=new FileReader();
+    r.onload=ev=>{
+      const dataUrl=ev.target.result;
+      const img=new Image();
+      img.onload=()=>{
+        try{
+          let w=img.naturalWidth,h=img.naturalHeight;
+          if(!w||!h){resolve(dataUrl);return;}
+          const scale=Math.min(1,maxSize/Math.max(w,h));
+          if(scale>=1){resolve(dataUrl);return;}
+          w=Math.round(w*scale);h=Math.round(h*scale);
+          const cv=document.createElement('canvas');cv.width=w;cv.height=h;
+          cv.getContext('2d').drawImage(img,0,0,w,h);
+          resolve(cv.toDataURL('image/jpeg',0.82));
+        }catch(_){resolve(dataUrl);}
+      };
+      img.onerror=()=>resolve(dataUrl);
+      img.src=dataUrl;
+    };
+    r.onerror=()=>resolve(null);
+    r.readAsDataURL(file);
+  });
+}
+
+// add files
+async function hf(files){
+  const arr=[...files].filter(f=>f.type.startsWith('image/'));
+  if(!arr.length)return;
+  for(const f of arr){
+    const url=await makeThumb(f,640);
+    if(!url)continue;
+    imgs.push({url,name:f.name});
+  }
+  renderAll();
+  if(isMob())mobTab('preview');
+}
+
+function clearAll(){
+  if(!imgs.length)return;
+  imgs.length=0;
+  renderAll();
+  toast('すべて削除しました');
+}
+function rm(i){
+  imgs.splice(i,1);
+  renderAll();
+}
+
+// ── レンダリング ──
+function renderAll(){renderGrid();renderList();updateCounts();}
+
+function renderGrid(){
+  const g=$('gd');g.innerHTML='';
+  imgs.forEach((im,i)=>{
+    const c=document.createElement('div');c.className='gc';
+    c.innerHTML=`<img src="${im.url}" alt=""><div class="gn">${i+1}</div><button class="gr" data-rm="${i}">✕</button>`;
+    g.appendChild(c);
+  });
+  // 9マスに満たない分は空セル
+  for(let i=imgs.length;i<9;i++){
+    const c=document.createElement('div');c.className='gc gc-e';
+    c.innerHTML='<svg viewBox="0 0 24 24"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>';
+    c.onclick=()=>$('fi').click();
+    g.appendChild(c);
+  }
+  // 削除ボタン
+  g.querySelectorAll('[data-rm]').forEach(b=>{
+    b.onclick=e=>{e.stopPropagation();rm(+b.dataset.rm);};
+  });
+}
+
+function renderList(){
+  const l=$('il');l.innerHTML='';
+  imgs.forEach((im,i)=>{
+    const r=document.createElement('div');r.className='il-r';
+    r.innerHTML=`<span class="il-g"><svg viewBox="0 0 8 14"><circle cx="2" cy="2" r="1.2" fill="#ccc"/><circle cx="6" cy="2" r="1.2" fill="#ccc"/><circle cx="2" cy="7" r="1.2" fill="#ccc"/><circle cx="6" cy="7" r="1.2" fill="#ccc"/><circle cx="2" cy="12" r="1.2" fill="#ccc"/><circle cx="6" cy="12" r="1.2" fill="#ccc"/></svg></span><img class="il-th" src="${im.url}"><span class="il-n">${im.name}</span><span class="il-i">${i+1}</span><button class="il-d" data-rm="${i}"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>`;
+    l.appendChild(r);
+  });
+  l.querySelectorAll('[data-rm]').forEach(b=>{
+    b.onclick=e=>{e.stopPropagation();rm(+b.dataset.rm);};
+  });
+}
+
+// ── SortableJS でドラッグ並び替え ──
+function initSortable(){
+  if(typeof Sortable==='undefined'){
+    // CDN未読込時：リンク切れでもアプリは動く（並び替えのみ無効）
+    console.warn('SortableJS未読込：並び替えは無効です');
+    return;
+  }
+  // グリッド：画像セルのみ並び替え可（空セルは固定）
+  new Sortable($('gd'),{
+  animation:160,
+  easing:'cubic-bezier(.2,.7,.3,1)',
+  filter:'.gc-e',                 // 空セルはドラッグ不可
+  draggable:'.gc:not(.gc-e)',
+  ghostClass:'sortable-ghost',
+  chosenClass:'sortable-chosen',
+  dragClass:'sortable-drag',
+  delay:120,                       // 長押し判定（タップと区別）
+  delayOnTouchOnly:true,
+  touchStartThreshold:5,
+  onMove:evt=>{
+    // 空セルの位置へは移動させない（画像セル同士のみ並び替え）
+    if(evt.related&&evt.related.classList.contains('gc-e'))return false;
+  },
+  onEnd:evt=>{
+    if(evt.oldIndex===evt.newIndex)return;
+    const to=Math.min(evt.newIndex,imgs.length-1);
+    const moved=imgs.splice(evt.oldIndex,1)[0];
+    imgs.splice(to,0,moved);
+    renderAll();
+  }
+});
+
+  // リスト：並び替え
+  new Sortable($('il'),{
+    animation:160,
+    handle:'.il-g',
+    ghostClass:'sortable-ghost',
+    chosenClass:'sortable-chosen',
+    onEnd:evt=>{
+      if(evt.oldIndex===evt.newIndex)return;
+      const moved=imgs.splice(evt.oldIndex,1)[0];
+      imgs.splice(evt.newIndex,0,moved);
+      renderAll();
+    }
+  });
+}
+
+// ── ファイル入力 ──
+const dz=$('dz');
+dz.onclick=()=>$('fi').click();
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('ov');});
+dz.addEventListener('dragleave',()=>dz.classList.remove('ov'));
+dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('ov');hf(e.dataTransfer.files);});
+$('fi').onchange=e=>{hf(e.target.files);e.target.value='';};
+$('zi').onchange=e=>{toast('ZIP取り込みはInstagramエクスポートに対応');e.target.value='';};
+document.querySelectorAll('.tbt').forEach(t=>t.onclick=()=>{document.querySelectorAll('.tbt').forEach(x=>x.classList.remove('on'));t.classList.add('on');});
+
+renderAll();
+initSortable();
+</script>
+</body>
+</html>
